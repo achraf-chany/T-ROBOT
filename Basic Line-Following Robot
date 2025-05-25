@@ -1,0 +1,97 @@
+// Définition des broches pour les capteurs IR
+const int IR_Left_Sensor = 5;  // Capteur gauche
+const int IR_Right_Sensor = 6; // Capteur droit
+
+// Définition des broches pour les moteurs
+#define motor_left_pwm 10       // PWM pour le moteur gauche
+#define control_motor_left_1 12 // Contrôle du sens du moteur gauche
+#define control_motor_left_2 13 // Contrôle du sens du moteur gauche
+#define motor_right_pwm 9       // PWM pour le moteur droit
+#define control_motor_right_1 7 // Contrôle du sens du moteur droit
+#define control_motor_right_2 8 // Contrôle du sens du moteur droit
+
+// Définition des vitesses des moteurs
+#define speedMax    255
+#define speedMaxleft   250
+#define speedMinright    150
+#define speedMinleft    145
+#define speedRight  200
+#define speedLeft   195
+#define BaseSpeed   150
+#define noSpeed     0
+
+void setup() {
+  // Initialisation des broches des capteurs en entrée
+  pinMode(IR_Left_Sensor, INPUT);
+  pinMode(IR_Right_Sensor, INPUT);
+
+  // Initialisation des broches des moteurs en sortie
+  pinMode(motor_left_pwm, OUTPUT);
+  pinMode(control_motor_left_1, OUTPUT);
+  pinMode(control_motor_left_2, OUTPUT);
+  pinMode(motor_right_pwm, OUTPUT);
+  pinMode(control_motor_right_1, OUTPUT);
+  pinMode(control_motor_right_2, OUTPUT);
+}
+
+void loop() {
+  // Lecture des valeurs des capteurs
+  int leftSensor = digitalRead(IR_Left_Sensor);
+  int rightSensor = digitalRead(IR_Right_Sensor);
+
+  // Logique de suivi de ligne
+  if (leftSensor == 0 && rightSensor == 0) {
+    avancer(); // Avancer
+  } else if (leftSensor == 1 && rightSensor == 0) {
+    tournerGauche(); // Tourner à gauche
+  } else if (leftSensor == 0 && rightSensor == 1) {
+    tournerDroite(); // Tourner à droite
+  } else if (leftSensor == 1 && rightSensor == 1) {
+    reculer(); // Reculer
+  }
+}
+
+void avancer() {
+  digitalWrite(control_motor_left_1, LOW);
+  digitalWrite(control_motor_left_2, HIGH);
+  analogWrite(motor_left_pwm, speedMaxleft);
+  digitalWrite(control_motor_right_1, LOW);
+  digitalWrite(control_motor_right_2, HIGH);
+  analogWrite(motor_right_pwm, speedMax);
+}
+
+void tournerGauche() {
+  digitalWrite(control_motor_left_1, HIGH);
+  digitalWrite(control_motor_left_2, LOW);
+  analogWrite(motor_left_pwm, speedMinleft);
+  digitalWrite(control_motor_right_1, LOW);
+  digitalWrite(control_motor_right_2, HIGH);
+  analogWrite(motor_right_pwm, speedRight);
+}
+
+void tournerDroite() {
+  digitalWrite(control_motor_left_1, LOW);
+  digitalWrite(control_motor_left_2, HIGH);
+  analogWrite(motor_left_pwm, speedLeft);
+  digitalWrite(control_motor_right_1, HIGH);
+  digitalWrite(control_motor_right_2, LOW);
+  analogWrite(motor_right_pwm, speedMinright);
+}
+
+void reculer() {
+  digitalWrite(control_motor_left_1, HIGH);
+  digitalWrite(control_motor_left_2, LOW);
+  analogWrite(motor_left_pwm, speedLeft);
+  digitalWrite(control_motor_right_1, HIGH);
+  digitalWrite(control_motor_right_2, LOW);
+  analogWrite(motor_right_pwm, speedRight);
+}
+
+void arreter() {
+  digitalWrite(control_motor_left_1, LOW);
+  digitalWrite(control_motor_left_2, LOW);
+  analogWrite(motor_left_pwm, noSpeed);
+  digitalWrite(control_motor_right_1, LOW);
+  digitalWrite(control_motor_right_2, LOW);
+  analogWrite(motor_right_pwm, noSpeed);
+}
