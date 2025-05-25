@@ -1,0 +1,92 @@
+char command = 0; // Variable pour stocker la commande reçue
+
+// Définition des broches pour les moteurs
+#define motor_left_pwm 10       // PWM pour le moteur gauche
+#define control_motor_left_1 12 // Contrôle du sens du moteur gauche
+#define control_motor_left_2 13 // Contrôle du sens du moteur gauche
+#define motor_right_pwm 9       // PWM pour le moteur droit
+#define control_motor_right_1 7 // Contrôle du sens du moteur droit
+#define control_motor_right_2 8 // Contrôle du sens du moteur droit
+
+// Définition des vitesses des moteurs
+#define speedMax    255
+#define speedMin    150
+#define speedRight  200
+#define speedLeft   200
+#define BaseSpeed   150
+#define noSpeed     0
+
+void setup() {
+  // Initialisation des broches des moteurs en sortie
+  pinMode(motor_left_pwm, OUTPUT);
+  pinMode(control_motor_left_1, OUTPUT);
+  pinMode(control_motor_left_2, OUTPUT);
+  pinMode(motor_right_pwm, OUTPUT);
+  pinMode(control_motor_right_1, OUTPUT);
+  pinMode(control_motor_right_2, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  if (Serial.available()) {
+    command = Serial.read();
+    Serial.print("Commande reçue : ");
+    Serial.println(command);
+    if (command == 'F') {
+      avancer();
+    } else if (command == 'R') {
+      reculer();
+    } else if (command == 'L') {
+      tournerGauche();
+    } else if (command == 'D') {
+      tournerDroite();
+    } else if (command == 'S') {
+      arreter();
+    }
+  }
+}
+
+void avancer() {
+  digitalWrite(control_motor_left_1, LOW);
+  digitalWrite(control_motor_left_2, HIGH);
+  analogWrite(motor_left_pwm, speedLeft);
+  digitalWrite(control_motor_right_1, LOW);
+  digitalWrite(control_motor_right_2, HIGH);
+  analogWrite(motor_right_pwm, speedRight);
+}
+
+void tournerGauche() {
+  digitalWrite(control_motor_left_1, HIGH);
+  digitalWrite(control_motor_left_2, LOW);
+  analogWrite(motor_left_pwm, speedMin);
+  digitalWrite(control_motor_right_1, LOW);
+  digitalWrite(control_motor_right_2, HIGH);
+  analogWrite(motor_right_pwm, speedRight);
+}
+
+void tournerDroite() {
+  digitalWrite(control_motor_left_1, LOW);
+  digitalWrite(control_motor_left_2, HIGH);
+  analogWrite(motor_left_pwm, speedLeft);
+  digitalWrite(control_motor_right_1, HIGH);
+  digitalWrite(control_motor_right_2, LOW);
+  analogWrite(motor_right_pwm, speedMin);
+}
+
+void reculer() {
+  digitalWrite(control_motor_left_1, HIGH);
+  digitalWrite(control_motor_left_2, LOW);
+  analogWrite(motor_left_pwm, speedLeft);
+  digitalWrite(control_motor_right_1, HIGH);
+  digitalWrite(control_motor_right_2, LOW);
+  analogWrite(motor_right_pwm, speedRight);
+}
+
+void arreter() {
+  digitalWrite(control_motor_left_1, LOW);
+  digitalWrite(control_motor_left_2, LOW);
+  analogWrite(motor_left_pwm, noSpeed);
+  digitalWrite(control_motor_right_1, LOW);
+  digitalWrite(control_motor_right_2, LOW);
+  analogWrite(motor_right_pwm, noSpeed);
+}
