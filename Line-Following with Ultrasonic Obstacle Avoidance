@@ -1,0 +1,200 @@
+// Configuration des broches
+const int IR_Left_Sensor = 5;   // Capteur IR gauche
+const int IR_Right_Sensor = 6;  // Capteur IR droit
+const int TrigPin = 4;          // Capteur ultrasonique Trig
+const int EchoPin = 2;          // Capteur ultrasonique Echo
+
+// Broches des moteurs
+#define motor_left_pwm 10
+#define control_motor_left_1 12
+#define control_motor_left_2 13
+#define motor_right_pwm 9
+#define control_motor_right_1 7
+#define control_motor_right_2 8
+
+// Vitesses ajustées
+#define speedMax      255
+#define speedMaxleft  250
+#define speedMinleft  120
+#define speedMinright 115
+#define speedLeft     170
+#define speedRight    165
+#define BaseSpeed     150
+#define noSpeed       0
+
+// Variables globales
+int lastDirection = 0;  // 0 = droite, 1 = gauche
+enum RobotState { MOVING_FORWARD, TURNING, AVOIDING_OBSTACLE };
+RobotState currentState = MOVING_FORWARD;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(IR_Left_Sensor, INPUT);
+  pinMode(IR_Right_Sensor, INPUT);
+  pinMode(TrigPin, OUTPUT);
+  pinMode(EchoPin, INPUT);
+  pinMode(motor_left_pwm, OUTPUT);
+  pinMode(control_motor_left_1, OUTPUT);
+  pinMode(control_motor_left_2, OUTPUT);
+  pinMode(motor_right_pwm, OUTPUT);
+  pinMode(control_motor_right_1, OUTPUT);
+  pinMode(control_motor_right_2, OUTPUT);
+}
+
+void loop() {
+  if (currentState == MOVING_FORWARD) {
+    float distance = ObstacleDistance();
+    if (distance > 0 && distance <= 8) {
+      currentState = AVOIDING_OBSTACLE;
+      eviter_obstacle();
+    } else if (distance == -1) {
+      arreter();
+      Serial.println("Erreur capteur");
+    }
+  }
+  suivreLigne();
+}
+
+void avancer() {
+  digitalWrite(control_motor_left_1, LOW);
+  digitalWrite(control_motor_left_2, HIGH);
+  analogWrite(motor_left_pwm, speedMaxleft);
+  digitalWrite(control_motor_right_1, LOW);
+  digitalWrite(control_motor_right_2, HIGH);
+  analogWrite(motor_right_pwm, speedMax);
+  currentState = MOVING_FORWARD;
+}
+
+void tournerGauche() {
+  currentState = TURNING;
+  digitalWrite(control_motor_left_1, HIGH);
+  digitalWrite(control_motor_left_2, LOW);
+  analogWrite(motor_left_pwm, speedMinleft);
+  digitalWrite(control_motor_right_1, LOW);
+  digitalWrite(control_motor_right_2, HIGH);
+  analogWrite(motor_right_pwm, speedRight);
+}
+
+void tournerGaucheFort() {
+  currentState = TURNING;
+  digitalWrite(control_motor_left_1, HIGH);
+  digitalWrite(control_motor_left_2, LOW);
+  analogWrite(motor_left_pwm, speedMinleft);
+  digitalWrite(control_motor_right_1, LOW);
+  digitalWrite(control_motor_right_2, HIGH);
+  analogWrite(motor_right_pwm, speedRight * 1.2);
+}
+
+void tournerDroite() {
+  currentState = TURNING;
+  digitalWrite(control_motor_left_1, LOW);
+  digitalWrite(control_motor_left_2, HIGH);
+  analogWrite(motor_left_pwm, speedLeft);
+  digitalWrite(control_motor_right_1, HIGH);
+  digitalWrite(control_motor_right_2, LOW);
+  analogWrite(motor_right_pwm, speedMinright);
+}
+
+void tournerDroiteFort() {
+  currentState = TURNING;
+  digitalWrite(control_motor_left_1, LOW);
+  digitalWrite(control_motor_left_2, HIGH);
+  analogWrite(motor_left_pwm, speedLeft * 1.2);
+  digitalWrite(control_motor_right_1, HIGH);
+  digitalWrite(control_motor_right_2, LOW);
+  analogWrite(motor_right_pwm, speedMinright);
+}
+
+void reculer() {
+  digitalWrite(control_motor_left_1, HIGH);
+  digitalWrite(control_motor_left_2, LOW);
+  analogWrite(motor_left_pwm, speedLeft);
+  digitalWrite(control_motor_right_1, HIGH);
+  digitalWrite(control_motor_right_2, LOW);
+  analogWrite(motor_right_pwm, speedRight);
+}
+
+void arreter() {
+  digitalWrite(control_motor_left_1, LOW);
+  digitalWrite(control_motor_left_2, LOW);
+  analogWrite(motor_left_pwm, noSpeed);
+  digitalWrite(control_motor_right_1, LOW);
+  digitalWrite(control_motor_right_2, LOW);
+  analogWrite(motor_right_pwm, noSpeed);
+}
+
+float ObstacleDistance() {
+  digitalWrite(TrigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TrigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TrigPin, LOW);
+  long duration = pulseIn(EchoPin, HIGH, 10000);
+  if (duration == 0 || duration > 10000) return -1.0;
+  float distance = (duration / 2.0) * 0.0343;
+  return distance < 2 ? -1.0 : distance;
+}
+
+void eviter_obstacle() {
+  arreter();
+  delay(500);
+  tournerDroite();
+  delay(500);
+  arreter();
+  delay(200);
+  avancer();
+  delay(800);
+  arreter();
+  delay(200);
+  tournerGauche();
+  delay(370);
+  arreter();
+  delay(200);
+  avancer();
+  delay(200);
+  arreter();
+  delay(200);
+  tournerGauche();
+  delay(500);
+  arreter();
+  delay(200);
+  chercher_ligne();
+  currentState = MOVING_FORWARD;
+}
+
+void suivreLigne() {
+  int left = digitalRead(IR_Left_Sensor);
+  int right = digitalRead(IR_Right_Sensor);
+  if (left == 0 && right == 0) {
+    avancer();
+    currentState = MOVING_FORWARD;
+  } else if (left == 1 && right == 0) {
+    tournerGaucheFort();
+  } else if (left == 0 && right == 1) {
+    tournerDroiteFort();
+  } else {
+    reculer();
+  }
+}
+
+void chercher_ligne() {
+  currentState = TURNING;
+  arreter();
+  delay(200);
+  long startTime = millis();
+  const long timeout = 3000;
+  avancer();
+  while (millis() - startTime < timeout) {
+    if (digitalRead(IR_Left_Sensor) == 0 || digitalRead(IR_Right_Sensor) == 0) {
+      arreter();
+      suivreLigne();
+      return;
+    }
+    delay(10);
+  }
+  arreter();
+  Serial.println("Réalignement après virage 90°");
+  reculer();
+  delay(300);
+  chercher_ligne();
+}
